@@ -16,9 +16,13 @@ use Getopt::Long qw(GetOptions :config no_ignore_case );
 
 use lib "/home/stefan/prog/bakki/cscrippy/";
 use Uupm::Dialog;
-use Uupm::Checker;
+#use Uupm::Checker;
+use Sys::Filesystem ();
 
 $VERSION = "1.7beta"; # 2024-10-16
+
+my $dir_usb = "/media/stefan/"; #??? -> xml
+my $dir_mnt = "/mnt/";
 
 #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 #: Reader for xml-files (configuration-file)
@@ -119,22 +123,17 @@ if (@ARGV) {
 		message_exit ($error_message , 02)
 	}
 }
-# Set the script configuration file if not already set
-#if ( !exists $script_metadata{configfile} || $script_metadata{configfile} eq '' ) {
-	#$error_message = "No XML file defined: '$script_metadata{configfile}'";
-	#message_exit ($error_message , 255);# obsolete...
-#} else {
-	$string_map{xml_file_name} = $script_metadata{configfile}; 
-	if ($is_test_mode && ! $is_silent_mode ) {
-		print "(t) start with '$script_metadata{configfile}'\n"
-	}
-#}
+# Start 
+$string_map{xml_file_name} = $script_metadata{configfile}; 
+if ($is_test_mode && ! $is_silent_mode ) {
+	print "(t) start with '$script_metadata{configfile}'\n"
+}
 
 #::: init doc for LibXML
 eval {
 	$dom = XML::LibXML->load_xml(
 							location => $script_metadata{configfile}, 
-							no_blanks => 1*0 # <>0 heisst string ohne space \n etc.
+							no_blanks => 0 # Remove blank nodes from the parsed XML
 							); 
 	$script_metadata{config_main_node} = $dom->documentElement->nodeName; 
 };
@@ -146,8 +145,8 @@ if ($@) {
 }
 
 #::: Start
-$error_message =  "Parsing '$script_metadata{config_main_node}' from\n'$script_metadata{configfile}'.";
-message_notification ($error_message , -1);
+$dialog_text =  "Parsing '$script_metadata{config_main_node}' from\n'$script_metadata{configfile}'.";
+message_notification ($dialog_text , -1);
 
 # Get general config values
 for my $tag_index (0..$#all_taglist) {
@@ -227,8 +226,8 @@ message_test_exit ($count , $error_message , 46);
 
 # End of reading config
 if ($is_test_mode > 0 ) {
-	$error_message = "Reading configuration file is done!";
-	message_notification ($error_message , 1); 
+	$dialog_text = "Reading configuration file is done!";
+	message_notification ($dialog_text , 1); 
 }
 
 ## Init Dialogs with config-values 
@@ -239,7 +238,7 @@ set_dialog_item ( 'titles' , $config_elements{dialog_title}, $config_elements{di
 	@list_column_name = split(/\s+/, $config_elements{$dialog_taglist[3]}) if $dialog_taglist[3];
 	@list_column_name = map { s/$nb_space/ /g; $_ } @list_column_name; 
 set_dialog_item ( 'columns' , @list_column_name );
-set_dialog_item ( 'window_size' , 350 , 500 , '' );
+set_dialog_item ( 'window_size' , 550 , 500 , '' );
 
 # Set elements for the listed items (for checklist)
 add_items_from_config ( 0 , \@prog_taglist , \@{$dialog_config{list}} );
@@ -270,7 +269,8 @@ if ($shell_commands{extract_all}) {
 	$error_message = "Extraction done, program will finish.";
 	message_exit ($error_message , 0)
 } elsif (scalar @{$shell_commands{commandline}} == 0 ) { # ask-for-selection
-    eval { @{$shell_commands{selection}} = ask_to_choose (%dialog_config) };
+	#$dialog_text="";
+    eval { @{$shell_commands{selection}} = ask_to_choose ($dialog_text) };
     if ($@) {
 		$error_message = "Error occurred: $@";
         message_exit ($error_message , 0)
@@ -291,6 +291,7 @@ foreach my $case (0 .. $limit) {
     if ( join (' ',@list_id ) =~ $selected_case ) { # if selected in list of ids (imprtant for values from commandline)
         my $program_name = "";
         foreach my $schema_item (@{$shell_commands{execution_order}}) {
+			ensure_path_readability ($list_item_line[$selected_case][$schema_item]);
             $program_name .= $list_item_line[$selected_case][$schema_item];
         };
         push @{$shell_commands{execution_list}} , $program_name ;
@@ -402,6 +403,7 @@ sub get_xml_text_by_tag {
     warn "Error: Tag name cannot be empty" unless defined($tag) && length($tag) > 0;
 
     $tag = "/$tag"; $tag =~ s{^/+}{//};
+
     if (defined $attr_tag) {
         $attr_tag = "/$attr_tag"; $attr_tag =~ s{^/+}{//};
         };
@@ -494,6 +496,94 @@ sub extract_progname { # mit Umstellung auf oo vielelicht weg
 	}
 
 	return @program_name;
+}
+
+# Function to ensure if a path is readable
+sub ensure_path_readability {
+    my ($path) = @_;
+    my $short;
+
+    if ($path =~ /\// ) {
+        $path =~ s/^\s+|\s+$//g ;
+        if ($path =~ /$dir_mnt/) {
+            $short = substr($path, length($dir_mnt), index($path, "/", length($dir_mnt)) - length($dir_mnt));
+            ensure_path_mounted($dir_mnt . $short, 1);
+        } elsif ($path =~ /$dir_usb/) {
+            $short = substr($path, length($dir_usb), index($path, "/", length($dir_usb)) - length($dir_usb));
+            ensure_path_mounted($dir_usb . $short);
+        } elsif (! -r $path) {
+            message_exit("Config-Error: Path\n'$path'\nis missing or not readable.", 21);
+        }
+    }
+}
+
+# Check if the required path (usb-stick; NAS; cloud) is mounted using sys-filesytem
+sub ensure_path_mounted {
+    my ($mounted_path, $max_attempts  ) = @_;
+
+    if (! defined($max_attempts) || $max_attempts =~ /\D/) {
+        $max_attempts = 5
+    }
+    if (! defined($mounted_path) || $mounted_path eq '' ) {
+        message_exit ("Invalid mounted path", 221)
+    }
+
+    my $attempt = 1;
+    my $answer;
+
+    my $filesystem_mirror = Sys::Filesystem->new();
+    my $mounted_filesystems_list = join (' ',$filesystem_mirror->mounted_filesystems());
+
+    if ($mounted_filesystems_list =~ /$mounted_path/ )  {
+        return 1
+    } else {
+        while ($attempt < $max_attempts) {
+			$dialog_text = "Path or Stick is missing (#$attempt/$max_attempts): ['$mounted_path' not found]\n\nDo you want to try again?";
+            $answer = ask_to_continue($dialog_text , 22);
+            if ($answer eq $cancel_option) {
+                message_exit ("Failed to find mounted path '$mounted_path'.", 222);
+            }
+            $attempt++;
+
+            # Update the list of mounted filesystems only if necessary
+            if ($attempt < $max_attempts) {
+                $filesystem_mirror = Sys::Filesystem->new();
+                $mounted_filesystems_list = join(' ', $filesystem_mirror->mounted_filesystems());
+                if ($mounted_filesystems_list =~ /$mounted_path/ )  {
+                    return 1
+                }
+            }
+        }
+    }
+    message_exit("Failed to find mounted path '$mounted_path' after $max_attempts attempts.", 223);
+}
+
+# Function to ensure availibility of a program
+# only first srtg when splitter definedd
+# else fullstring
+sub ensure_program_available {
+    my ($prog_name , $splitter) = @_;
+    $splitter ||= 'Klsos'; # some ramdon word if undef
+    my @program_parts = split($splitter, $prog_name);
+
+    if (system("command -v '$program_parts[0]' > /dev/null 2>&1") != 0) {
+        message_exit ("Config-Error: program '$program_parts[0]' not found.\n", 24);
+    }
+}
+
+# Checking for no double-ids in the list
+sub find_array_duplicates {
+    my @array = @_;
+    my %count;
+    my @dupl;
+
+    for my $j (@array) {
+        if (ref($j) ne 'ARRAY') {
+            $count{$j}++;
+            push @dupl, $j if $count{$j} > 1;
+        }
+    }
+    return @dupl;
 }
 
 # for debugging

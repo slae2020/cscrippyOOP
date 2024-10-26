@@ -6,7 +6,7 @@ use 5.010;
 use strict;
 use warnings;
 use Exporter;
-use Scalar::Util qw(looks_like_number);
+#use Scalar::Util qw(looks_like_number);
 use IPC::System::Simple qw(system);
 use lib "/home/stefan/perl5/lib/perl5/";  
 use UI::Dialog::Backend::Zenity;
@@ -14,33 +14,35 @@ use UI::Dialog::Backend::Zenity;
 use Data::Dumper; # nur für test ausgaben
 
 BEGIN {
-  use vars qw ( 
-	$VERSION 
-	$is_silent_mode 
-	$is_test_mode 
-	$cancel_option 
-	$nb_space 
-	
-	$error_message
-	
-	@ISA 
-	);
-  $VERSION = 'Dialog.pm v0.11'; # for Dialog.pm 2024.09.30
-  $is_silent_mode = 0;
-  $is_test_mode = 0;
-  $cancel_option="#x001B"; # unicode https://www.sonderzeichen.de/ASCII/Unicode-001B.html
-  $nb_space="#x0020";
-  
-  $error_message = "General error.";
-  our @ISA = qw ( Exporter );
-  our @EXPORT = qw (
-    $VERSION
+    use vars qw (
+        $VERSION
         $is_silent_mode
         $is_test_mode
         $cancel_option
         $nb_space
 
-    set_dialog_item
+        $error_message
+        $dialog_text
+
+        @ISA
+    );
+    $VERSION = 'Dialog.pm v0.11'; # for Dialog.pm 2024.09.30
+    $is_silent_mode = 0;
+    $is_test_mode = 0;
+    $cancel_option="#x001B"; # unicode https://www.sonderzeichen.de/ASCII/Unicode-001B.html
+    $nb_space="#x0020";
+
+    $error_message = "General error.";
+    $dialog_text = "Defaulttext";
+    our @ISA = qw ( Exporter );
+    our @EXPORT = qw (
+        $VERSION
+        $is_silent_mode
+        $is_test_mode
+        $cancel_option
+        $nb_space
+
+        set_dialog_item
         add_list_item
         message_exit
         message_test_exit
@@ -48,9 +50,10 @@ BEGIN {
         ask_to_continue
         ask_to_choose
 
-    %dialog_config
-    $error_message
-        );
+        %dialog_config
+        $error_message
+        $dialog_text
+    );
 };
 
 #:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -72,7 +75,7 @@ my %dialog_defaults = (
 our %dialog_config = %dialog_defaults;
 
 # Declare zenity-window
-our $d = UI::Dialog::Backend::Zenity->new(
+our $dialog = UI::Dialog::Backend::Zenity->new(
         title       => $dialog_defaults{titles}[0],
         text        => $dialog_defaults{titles}[1],
         height      => $dialog_defaults{window_size}[0],
@@ -143,7 +146,8 @@ sub add_list_item {
         message_exit ( "Error: list_id '$list_id' length exceeds 5 characters", 41);
     };
     # $list_checkbox_flag muss int sein sonst 0
-    if (! looks_like_number ($list_checkbox_flag) ) {
+    #if (! looks_like_number ($list_checkbox_flag) ) {
+    if (! defined($list_checkbox_flag) || $list_checkbox_flag =~ /\D/) {
         $list_checkbox_flag = 0
     };
 
@@ -157,7 +161,7 @@ sub add_list_item {
 # ':' replaced by '\n'
 sub message_exit {
     my ($txt, $err) = @_;
-    $err = 1 unless defined $err;
+    $err = 1 unless defined $err; # ??? immer defined
     $txt =~ s/:\s*/:\n/g;
 
 	 if (! $is_silent_mode) {
@@ -169,7 +173,7 @@ sub message_exit {
             say "(t) ".$dialog_config{titles}[0]."\n$txt\nLeaving program ($err).";
         } else {		
             eval {
-                $d->error(
+                $dialog->error(
                     title   => $dialog_config{titles}[0],
                     text    => "$txt\n\nLeaving program with code $err." ,
                     height  => $dialog_config{window_size}[0],
@@ -199,32 +203,7 @@ sub message_test_exit {
     }
 }
 
-# Notification-window
-# timout after $2 sec or click (not working)
-#
-sub message_notification3 {
-    my ($txt, $timeout) = @_; # ? timeout nicht berücksichtigt
-#say "mess-notif::Time-->".$timeout."?\n";
-
-
-
-    if ($timeout > 0 && ! $is_silent_mode ) {
-        if ($is_test_mode) {
-            say "(t) ".$dialog_config{titles}[0]."\n $txt";
-        } else {
-my $cmd_to_execute ="zenity --notification --window-icon=\"info\" --height 500 --width 500 --title=\"$dialog_config{titles}[0]\.\" --text=\"$txt\" --timeout=\"$timeout\" & ";
-#say $cmd_to_execute;
-#say "___";
-my $exit_status = system ($cmd_to_execute);
-if ($exit_status != 0) {
-    warn "Error displaying notification: $exit_status";
-}
-
-
-        }
-    }
-}
-
+# Pur Info-Text
 sub message_notification {
 	my ($txt, $timeout) = @_;
 	
@@ -257,31 +236,6 @@ sub message_notification {
 	}
 }
 
-
-sub message_notification2 {
-    my ($txt, $timeout) = @_; # ? timeout nicht berücksichtigt
-say "mess-notif::Time-->".$timeout."?\n";
-
-    if ($timeout > 0 && ! $is_silent_mode ) {
-        if ($is_test_mode) {
-            say "(t) ".$dialog_config{titles}[0]."\n $txt";
-        } else {
-            eval {
-                $d->infobox(
-                    title   => $dialog_config{titles}[0],
-                    text    => $txt,
-                    timeout => $timeout,
-                    height  => $dialog_config{window_size}[0], # std 150
-                    width   => $dialog_config{window_size}[1]  # std 400
-                );
-            };
-            if ($@) {
-                warn "Error displaying notification: $@";
-            }
-        }
-    }
-}
-
 # Ask for conformation to continue with internal error code
 # returns 1 for yes
 #         is_cancel else
@@ -290,12 +244,12 @@ sub ask_to_continue {
     $err = -1 unless defined $err;
     $txt =~ s/: /:\n/g;
 
-    die "(t) $dialog_config{titles}[0]\n$txt ($err)\n", -1
-        if $is_test_mode;
+   # die "(t) $dialog_config{titles}[0]\n$txt ($err)\n";   #, -1
+    #    if $is_test_mode;
 
     my $answer;
     eval {
-        $answer = $d->question(
+        $answer = $dialog->question(
             title   => $dialog_config{titles}[0],
             text    => "$txt ($err)" ,
             height  => $dialog_config{window_size}[0],
@@ -313,16 +267,17 @@ sub ask_to_continue {
 # first 3 strings for titles etc;
 # $cancel_option if no choose
 sub ask_to_choose {
+	my ($txt, $err) = @_;
     my @answer;
+	$err //=$cancel_option;
 
-    # Die if no list-items are provided
     die "Error with checklist: no items found to choose."
         unless defined( $dialog_config{list}[0] ) && length($dialog_config{list}[0]) > 0 ;
 
     eval {
-        @answer = $d->checklist (
-                    title   => $dialog_config{titles}[0],
-                    text    => $dialog_config{titles}[1],
+        @answer = $dialog->checklist (
+                    title   => $dialog_config{titles}[0] //="Error?",
+                    text    => $dialog_config{titles}[1] //=$txt,
                     height  => $dialog_config{window_size}[0],
                     width   => $dialog_config{window_size}[1],
                     column1 => $dialog_config{columns}[0],
@@ -335,10 +290,11 @@ sub ask_to_choose {
             warn "Error with checklist: $@";
             return 0;
     };
+
     if (! $answer[0] gt '' ) {
         @answer = $cancel_option;
     } elsif ($answer[0] eq "0") {
-        @answer = $cancel_option;
+        @answer = $err;
     };
 
     return @answer;

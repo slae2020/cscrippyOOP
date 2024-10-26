@@ -12,7 +12,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 	
 	<dialog_cfg>
 		<dialog_title>$cscrippy_name</dialog_title>
-		<dialog_menue>Meld-Vergleich auswählen (v$version1$version2)</dialog_menue>
+		<dialog_menue>Meld-Vergleich auswählen (v$versionNr$versionTxt)</dialog_menue>
 		<dialog_column_items>[?] #x0020 Backup#x0020Titel</dialog_column_items> 
 	</dialog_cfg>		
 	
