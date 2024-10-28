@@ -4,18 +4,18 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xsd">
 
 	<general>
-		<cscrippy_name>Starter BK</cscrippy_name>		
+		<cscrippy_name>Starter BK</cscrippy_name>
 		<versionNr date="2024-10-05">1.7</versionNr>
 		<versionTxt> Now in perl-mode</versionTxt>
 		<lang>de-DE</lang>
 	</general>
-	
+
 	<dialog_cfg>
 		<dialog_title>$cscrippy_name</dialog_title>
 		<dialog_menue>Meld-Vergleich auswählen (v$versionNr$versionTxt)</dialog_menue>
-		<dialog_column_items>[?] #x0020 Backup#x0020Titel</dialog_column_items> 
-	</dialog_cfg>		
-	
+		<dialog_column_items>[?] #x0020 Backup#x0020Titel</dialog_column_items>
+	</dialog_cfg>
+
 	<directories>
 		<home_dir>/home/stefan</home_dir>
 		<standard_dir>/slae_kim</standard_dir>
@@ -32,35 +32,27 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 		<list_prog_id>98</list_prog_id>
 		<list_prog_strg>Just meld</list_prog_strg>
 		<std_program>meld </std_program>
-		
+
 		<list_config_id>99</list_config_id>
-		<list_config_strg>Einstellungen</list_config_strg> 
+		<list_config_strg>Einstellungen</list_config_strg>
 		<editor_program>gedit $xml_file_name </editor_program>
 	</list_cfg>
-		
+
 	<vergleiche>
-<!--
-		id immer integer
-		keine Lücken in name & id
-		immer $empty minimum für nix/leer 
--->
 		<ordpaar id="00">
-			
 			<_name>SLAE01</_name>
 			<prog>$std_program</prog>
 			<dir1> ~$standard_dir</dir1>
 			<dir2> $storage_dir/SLAE01/slaekim</dir2>
 		</ordpaar>
 		<ordpaar id="01">
-			
 			<_name>iserv USR</_name>
 			<prog>$std_program</prog>
 			<dir1> ~$standard_dir/usr</dir1>
 			<dir2> $remote_dir/usr</dir2>
 		</ordpaar>
 		<ordpaar id="02">
-		
-			<_name>i serv unt</_name>
+			<_name>iserv unt</_name>
 			<prog>$std_program</prog>
 			<dir1> ~/slae_unt</dir1>
 			<dir2> $remote_dir/unt</dir2>
@@ -78,7 +70,6 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 			<dir2> $home_dir/slae_unt</dir2>
 		</ordpaar>
 		<ordpaar id="05">
-	<id>05</id>
 			<_name>SLAE03</_name>
 			<prog>$std_program</prog>
 			<dir1> ~$standard_dir</dir1>
@@ -90,9 +81,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 			<dir1> ~/.door3</dir1>
 			<dir2> $remote_dir/kp/myt</dir2>
 		</ordpaar>
-
 		<ordpaar id="77">
-	<id>07</id>
 			<_name>KIMocloud_td</_name>
 			<prog>$std_program</prog>
 			<dir1> $empty</dir1>
@@ -121,7 +110,6 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 		</ordpaar>
 -->
 	</vergleiche>
-
 </bk-script_options>
 <!-- Ende des XML-Dokumentes -->
 

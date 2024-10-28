@@ -141,15 +141,15 @@ sub set_dialog_item {
 sub add_list_item {
     my ($list_checkbox_flag,$list_id,$list_text) = @_;
 
-    # $list_id max length ==5
     if (length $list_id > 5) {
-        message_exit ( "Error: list_id '$list_id' length exceeds 5 characters", 41);
-    };
-    # $list_checkbox_flag muss int sein sonst 0
-    #if (! looks_like_number ($list_checkbox_flag) ) {
+		$error_message = "(t) Error: list_id '$list_id' ($list_text)". 
+			"length exceeds 5 characters\n";
+        warn ($error_message , 41) if ($is_test_mode);
+        $list_id = substr ($list_id,0,5);
+    }
     if (! defined($list_checkbox_flag) || $list_checkbox_flag =~ /\D/) {
         $list_checkbox_flag = 0
-    };
+    }
 
     # order following to UI::Dialog
     my @output = ( $list_id, [ $list_text , $list_checkbox_flag ] );
@@ -164,7 +164,7 @@ sub message_exit {
     $err = 1 unless defined $err; # ??? immer defined
     $txt =~ s/:\s*/:\n/g;
 
-	 if (! $is_silent_mode) {
+	 if (! $is_silent_mode && $is_test_mode ) {
             say "(t) ".$dialog_config{titles}[0]."\n$txt\nLeaving program ($err).";
         };
     if ($err > 0) {
@@ -205,35 +205,35 @@ sub message_test_exit {
 
 # Pur Info-Text
 sub message_notification {
-	my ($txt, $timeout) = @_;
-	
-	if (! $is_silent_mode ) {
-		 if ($is_test_mode) {
+    my ($txt, $timeout) = @_;
+
+    if (! $is_silent_mode ) {
+         if ($is_test_mode) {
             say "(t) ".$dialog_config{titles}[0]."\n $txt";
         } else {
-			my $zenity_cmd = `which zenity`;
-			chomp($zenity_cmd);
-			if (!$zenity_cmd || !-x $zenity_cmd) {
-				warn "zenity command not found or not executable";
-			return;
-			}
-			my $cmd_to_execute = [$zenity_cmd, '--notification', '--window-icon=info', '--height', '500', '--width', '500', '--title', $dialog_config{titles}[0], '--text', $txt, '--timeout', $timeout, '&'];
-			my $exit_status = system( [0..5], @$cmd_to_execute);
-			#if ($exit_status > 5) { # eigtl != 0
-			#warn "Error displaying notification: $exit_status";
-			#}
-			if ($exit_status > 5) {
-				my $error_msg = "Error displaying notification: $exit_status";
-				if ($? >> 8) {
-					$error_msg .= " (exit code: " . ($? >> 8) . ")";
-				}
-				if ($? & 127) {
-					$error_msg .= " (signal: " . ($? & 127) . ")";
-				}
-			warn $error_msg;
-			}
-		}
-	}
+            my $zenity_cmd = `which zenity`;
+            chomp($zenity_cmd);
+            if (!$zenity_cmd || !-x $zenity_cmd) {
+                warn "zenity command not found or not executable";
+            return;
+            }
+            my $cmd_to_execute = [$zenity_cmd, '--notification', '--window-icon=info', '--height', '500', '--width', '500', '--title', $dialog_config{titles}[0], '--text', $txt, '--timeout', $timeout, '&'];
+            my $exit_status = system( [0..5], @$cmd_to_execute);
+            #if ($exit_status > 5) { # eigtl != 0
+            #warn "Error displaying notification: $exit_status";
+            #}
+            if ($exit_status > 5) {
+                my $error_msg = "Error displaying notification: $exit_status";
+                if ($? >> 8) {
+                    $error_msg .= " (exit code: " . ($? >> 8) . ")";
+                }
+                if ($? & 127) {
+                    $error_msg .= " (signal: " . ($? & 127) . ")";
+                }
+            warn $error_msg;
+            }
+        }
+    }
 }
 
 # Ask for conformation to continue with internal error code
@@ -244,8 +244,8 @@ sub ask_to_continue {
     $err = -1 unless defined $err;
     $txt =~ s/: /:\n/g;
 
-   # die "(t) $dialog_config{titles}[0]\n$txt ($err)\n";   #, -1
-    #    if $is_test_mode;
+    die "(t) $dialog_config{titles}[0]\n$txt ($err)\n" , -1
+        if $is_test_mode;
 
     my $answer;
     eval {
@@ -267,13 +267,12 @@ sub ask_to_continue {
 # first 3 strings for titles etc;
 # $cancel_option if no choose
 sub ask_to_choose {
-	my ($txt, $err) = @_;
+    my ($txt, $err) = @_;
     my @answer;
-	$err //=$cancel_option;
+    $err //=$cancel_option;
 
     die "Error with checklist: no items found to choose."
         unless defined( $dialog_config{list}[0] ) && length($dialog_config{list}[0]) > 0 ;
-
     eval {
         @answer = $dialog->checklist (
                     title   => $dialog_config{titles}[0] //="Error?",
@@ -296,7 +295,6 @@ sub ask_to_choose {
     } elsif ($answer[0] eq "0") {
         @answer = $err;
     };
-
     return @answer;
 }
 

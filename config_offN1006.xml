@@ -40,12 +40,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 		<editor_program>gedit $xml_file_name</editor_program>
 	</list_cfg>
 
-<vorlagen>
-<!--
-		id immer integer
-		keine Lücken in name & id
-		immer $empty minimum für nix/leer 
--->
+	<vorlagen>
 		<eintrag id="00">
 			<_name>writer (leer)</_name>
 			<prog>$std_program --writer</prog>
@@ -53,9 +48,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 			<template_path> </template_path>
 			<template_file>$empty</template_file>
 		</eintrag>
-
 		<eintrag id="01">
-		<id>01</id>
 			<_name>slae Brief</_name>
 			<prog>$std_program</prog>
 			<param>$empty</param>

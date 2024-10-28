@@ -19,7 +19,7 @@ use Uupm::Dialog;
 #use Uupm::Checker;
 use Sys::Filesystem ();
 
-$VERSION = "1.7beta"; # 2024-10-16
+$VERSION = "1.7001beta"; # 2024-10-28
 
 my $dir_usb = "/media/stefan/"; #??? -> xml
 my $dir_mnt = "/mnt/";
@@ -49,7 +49,7 @@ my %config_elements;
 #: XML-DOM
 my $dom;
 
-#: Define tag-lists as filling for config-xml-file <attribution></attribution>
+#: Define tag-lists as filling for config-xml-file <attrib></attrib>
 # DEF_ for to be ignored by get-xml-value
 # undef leads to undefined value
 # tbd to be committed
@@ -73,75 +73,79 @@ my @config_taglist		= 	qw ( DEF_cfgprog	list_config_id  list_config_strg	editor_
 my @config_default		= 	qw ( undef			99  			settings    		undef );
 
 # full lists
-my @all_taglist = 		(@general_taglist , 	@dialog_taglist , 	@dir_taglist , 		@list_taglist , 	@prog_taglist , 	@config_taglist);
-my @all_tagdefault = 	(@general_tagdefault , 	@dialog_tagdefault, @dir_tagdefault , 	@list_tagdefault , 	@prog_default , 	@config_default);
+my @all_taglist =       (@general_taglist ,     @dialog_taglist ,   @dir_taglist ,      @list_taglist ,     @prog_taglist ,     @config_taglist);
+my @all_tagdefault =    (@general_tagdefault ,  @dialog_tagdefault, @dir_tagdefault ,   @list_tagdefault ,  @prog_default ,     @config_default);
 
 # Define parameter of sync-group-elements
-my @list_item_line;           	# n x m array for n item-lines with m columns each
-my @list_id = ();       		# n ids ('integers!') for the lines
-my @list_item_name = ('_name');	# m fieldnames (tags) for every line
+my @list_item_line;   # n x m array for n item-lines with m columns each
+my @list_id = ();               # n ids ('integers!') for the lines
+my @list_item_name = ('_name'); # m fieldnames (tags) for every line
 
 #: hash with strings to replace & their replacer
 my %string_map = (
-	cancel_option => $cancel_option, # left string, rigth a value!
-	nb_space => $nb_space, 
-	empty => ' ',
-	xml_file_name => ' foobar',
-	);
+    cancel_option => $cancel_option, # left string, rigth a value!
+    nb_space => $nb_space,
+    empty => ' ',
+    xml_file_name => ' foobar',
+    );
 
-# Workparameters 
+# Workparameters
 my %shell_commands = (
-	commandline => [], 					# items via args
-	selection => [],					# items from cheklist
-	execution_list => [] ,				# as in xml-file, for the execution at the end
-	execution_order => [ 4 , 1 , 2 ] ,	# as in xml-file, scheme for the order of list-fields in order to execute
-	extract_all => 0					# >0 for grepping full xml-file
+    commandline => [],                  # items via args
+    selection => [],                    # items from cheklist
+    execution_list => [] ,              # as in xml-file, for the execution at the end
+    execution_order => [ 4 , 1 , 2 ] ,  # as in xml-file, scheme for the order of list-fields in order to execute
+    extract_all => 0                    # >0 for grepping full xml-file
 );
 
 #::: main ::::::::::::::::::::::#
 #::: reading args from commandline
 my $usage_exit = 0;
 if (@ARGV) {
-		sub handler {
+        sub handler {
 			my ($opt_name , $opt_value) = @_;
-			# Special-entry in string_map with higher priority
-			$string_map{$config_taglist[3]} = "\$ALL$opt_value";
-		}
-	GetOptions (
-		'c=s' 		=> \$script_metadata{configfile}, # the NECESSARY XML-file
-		'g:s' 		=> \&handler, # other edit-prog (with other file-name possible)
-		'e'			=> sub { $shell_commands{extract_all} = 1 }, 	# extrakt all(!) config-elements
-		'n:i{1,3}' 	=> \@{$shell_commands{commandline}},
-		't|testmode'=> sub { $is_test_mode =  1 }, # 'normal' test-mode
-		'v|verbose'	=> sub { $is_test_mode = 20}, 	# verbose == show all infos
-		'q|quiet'   => sub { $is_silent_mode = 1; say "(t) psst." if $is_test_mode; $is_test_mode = 0 }, # quiet, no messages 
-		'h|help|?' 	=> \$usage_exit,
-	) or 
-	$usage_exit = 1;
-	if ($usage_exit || ! $script_metadata{configfile} ) {
-		$error_message = "Usage: $0 $VERSION [-g gEditor] [-e] [-n id max 3] [-t|v|q] [-h] -c Konfiguration.xml \n";
-		message_exit ($error_message , 02)
-	}
+            # Special-entry in string_map with higher priority
+            $string_map{$config_taglist[3]} = "\$ALL$opt_value";
+        }
+        
+    GetOptions (
+        'c=s'       => 	\$script_metadata{configfile}, # the NECESSARY XML-file
+        'g:s'       => 	\&handler, # other edit-prog (with other file-name possible)
+        'e'         => 	sub { $shell_commands{extract_all} = 1 }, # extrakt all(!) config-elements
+        'n:i{1,3}'  => 	\@{$shell_commands{commandline}},
+        't|testmode'=> 	sub { $is_test_mode =  1 }, # 'normal' test-mode
+        'v|verbose' => 	sub { $is_test_mode = 20}, # verbose == show all
+        'q|quiet'   => 	sub { 
+							$is_silent_mode = 1; 
+							say "(t) psst." if $is_test_mode; 
+							$is_test_mode = 0 
+						}, # quiet, no messages
+        'h|help|?'  => 	\$usage_exit,
+    ) or $usage_exit = 1;
+    if ($usage_exit || ! $script_metadata{configfile} ) {
+        $error_message = "Usage: $0 $VERSION [-g gEditor] [-e] [-n id max 3] [-t|v|q] [-h] -c Konfiguration.xml \n";
+        message_exit ($error_message , 02)
+    }
 }
-# Start 
-$string_map{xml_file_name} = $script_metadata{configfile}; 
+# Start
+$string_map{xml_file_name} = $script_metadata{configfile};
 if ($is_test_mode && ! $is_silent_mode ) {
-	print "(t) start with '$script_metadata{configfile}'\n"
+    print "(t) start with '$script_metadata{configfile}'\n"
 }
 
 #::: init doc for LibXML
 eval {
-	$dom = XML::LibXML->load_xml(
-							location => $script_metadata{configfile}, 
-							no_blanks => 0 # Remove blank nodes from the parsed XML
-							); 
-	$script_metadata{config_main_node} = $dom->documentElement->nodeName; 
+    $dom = XML::LibXML->load_xml(
+                            location => $script_metadata{configfile},
+                            no_blanks => 0 # Remove blank nodes from the parsed XML
+                            );
+    $script_metadata{config_main_node} = $dom->documentElement->nodeName;
 };
 if ($@) {
-	$error_message = "Failed to parse XML file: $@";
+    $error_message = "Failed to parse XML file: $@";
     message_exit ($error_message , 255);
-} else { 
-	set_dialog_item ('titles' , uc($script_metadata{script_name})." V".$VERSION , '' , '' );
+} else {
+    set_dialog_item ('titles' , uc($script_metadata{script_name})." V".$VERSION , '' , '' );
 }
 
 #::: Start
@@ -150,29 +154,30 @@ message_notification ($dialog_text , -1);
 
 # Get general config values
 for my $tag_index (0..$#all_taglist) {
-	my $found_xml_value;
-	if ( $all_taglist[$tag_index] !~ /^DEF_/ ) { # exclude DEF_something
-		$found_xml_value = get_xml_text_by_tag( $dom, $all_taglist[$tag_index] ) 
-	}
-	if ( defined $found_xml_value && $found_xml_value ne '' ) { # string not empty
-		$config_elements{$all_taglist[$tag_index]} = $found_xml_value;
-    } elsif ($all_tagdefault[$tag_index] =~ /^undef$/) { # undef if string is 'undef' 
-		$config_elements{$all_taglist[$tag_index]} = undef;
+    my $found_xml_value;
+
+    if ( $all_taglist[$tag_index] !~ /^DEF_/ ) { # exclude DEF_something
+        $found_xml_value = get_xml_text_by_tag( $dom, $all_taglist[$tag_index] )
+    }
+    if ( defined $found_xml_value && $found_xml_value ne '' ) { # string not empty
+        $config_elements{$all_taglist[$tag_index]} = $found_xml_value;
+    } elsif ($all_tagdefault[$tag_index] =~ /^undef$/) { # undef if string is 'undef'
+        $config_elements{$all_taglist[$tag_index]} = undef;
     } else { # or set to default
-		$config_elements{$all_taglist[$tag_index]} = $all_tagdefault[$tag_index];
-	}
+        $config_elements{$all_taglist[$tag_index]} = $all_tagdefault[$tag_index];
+    }
 }
 
 ## Replace placeholders from config & Ensure the progs are set
-foreach my $placeholder (@general_taglist , @dir_taglist)  { 
-	$string_map{$placeholder} = $config_elements{$placeholder} if $config_elements{$placeholder};
+foreach my $placeholder (@general_taglist , @dir_taglist)  {
+    $string_map{$placeholder} = $config_elements{$placeholder} if $config_elements{$placeholder};
 }
 foreach my $tag (@dialog_taglist , @prog_taglist , @config_taglist) {
-	$config_elements{$tag}  = substitute_with_map ( $config_elements{$tag}, $tag , %string_map ); 
-	if ( $tag ~~ @dialog_taglist ) { # replace string from general-tags into dialog-items
-		$config_elements{$tag} =~ s/\\n//g if $config_elements{$tag}; 
-	}		
-	if ( $tag =~ /_program/ ) { # if a program is given in the config then test it
+    $config_elements{$tag}  = substitute_with_map ( $config_elements{$tag}, $tag , %string_map );
+    if ( $tag ~~ @dialog_taglist ) { # replace string from general-tags into dialog-items
+        $config_elements{$tag} =~ s/\\n//g if $config_elements{$tag};
+    }
+    if ( $tag =~ /_program/ ) { # if a program is given in the config then test it
         ensure_program_available($config_elements{$tag}, ' ' ) if $config_elements{$tag};
         $string_map{$tag} = $config_elements{$tag} if $config_elements{$tag}; # add then prog to hash string_map
     }
@@ -180,19 +185,19 @@ foreach my $tag (@dialog_taglist , @prog_taglist , @config_taglist) {
 
 ## Pass the splitted config-values (file) to list-configs (program)
 if ($list_taglist[3]) { # name of the tags
-	$config_elements{$list_taglist[3]} =~ s/^\s+|\s+$//g;
-	@list_item_name = split( /\s+/ , $config_elements{$list_taglist[3]} ); # space-separated
+    $config_elements{$list_taglist[3]} =~ s/^\s+|\s+$//g;
+    @list_item_name = split( /\s+/ , $config_elements{$list_taglist[3]} ); # space-separated
 }
 if ($list_taglist[4]) { # order of the tag to be executed
-	$config_elements{$list_taglist[4]} =~ s/^\s+|\s+$//g;
-	@{$shell_commands{execution_order}} = split( /\s+/ , $config_elements{$list_taglist[4]} ); # space-separated
-	@{$shell_commands{execution_order}} = grep { $_ =~ /^[+-]?\d+$/ } @{$shell_commands{execution_order}}; # +-integer only
-	foreach my $i (@{$shell_commands{execution_order}}) {
-		if ($i > $#list_item_name || $i <= 0) { # must be in range
-			$error_message = "Config-Error: entry for execution order is wrong ($i).";
-			message_exit ($error_message , 51)
-		}
-	}
+    $config_elements{$list_taglist[4]} =~ s/^\s+|\s+$//g;
+    @{$shell_commands{execution_order}} = split( /\s+/ , $config_elements{$list_taglist[4]} ); # space-separated
+    @{$shell_commands{execution_order}} = grep { $_ =~ /^[+-]?\d+$/ } @{$shell_commands{execution_order}}; # +-integer only
+    foreach my $i (@{$shell_commands{execution_order}}) {
+        if ($i > $#list_item_name || $i <= 0) { # must be in range
+            $error_message = "Config-Error: entry for execution order is wrong ($i).";
+            message_exit ($error_message , 51)
+        }
+    }
 }
 
 # Get identifier from the list elements in config (keep '/')
@@ -208,10 +213,10 @@ my $num_options = 0;
 
 foreach my $item (@list_item_name) {
     foreach my $item_id (@list_id) {
-		my $found_xml_value;
+        my $found_xml_value;
         $found_xml_value = get_xml_text_by_tag ($dom, $item, $config_elements{'list_label'}, $item_id );
         if ($found_xml_value) { # clean/replace as defined
-			$found_xml_value = substitute_with_map ($found_xml_value , "" , %string_map ); 
+            $found_xml_value = substitute_with_map ($found_xml_value , "" , %string_map );
             $list_item_line[$item_id][$item_field] = $found_xml_value; # put into line
         }
         ++$num_options if ($found_xml_value ne '' ) ;
@@ -226,25 +231,25 @@ message_test_exit ($count , $error_message , 46);
 
 # End of reading config
 if ($is_test_mode > 0 ) {
-	$dialog_text = "Reading configuration file is done!";
-	message_notification ($dialog_text , 1); 
+    $dialog_text = "Reading configuration file is done!";
+    message_notification ($dialog_text , 1);
 }
 
 ## Init Dialogs with config-values 
 # Set elements for list-dialog
 	$config_elements{dialog_menue} .= "\n\t\t(processed with '$script_metadata{script_name} $script_metadata{version}')"; 
-set_dialog_item ( 'titles' , $config_elements{dialog_title}, $config_elements{dialog_menue}, $config_elements{dialog_column1}); 
+set_dialog_item ('titles' , $config_elements{dialog_title}, $config_elements{dialog_menue}, $config_elements{dialog_column1}); 
 	my @list_column_name;  # take the xml-value, split into 3, then replace placeholder for splitting with ' '
 	@list_column_name = split(/\s+/, $config_elements{$dialog_taglist[3]}) if $dialog_taglist[3];
 	@list_column_name = map { s/$nb_space/ /g; $_ } @list_column_name; 
-set_dialog_item ( 'columns' , @list_column_name );
-set_dialog_item ( 'window_size' , 550 , 500 , '' );
+set_dialog_item ('columns' , @list_column_name);
+set_dialog_item ('window_size' , 550 , 500 , '');
 
 # Set elements for the listed items (for checklist)
-add_items_from_config ( 0 , \@prog_taglist , \@{$dialog_config{list}} );
-add_items_from_config ( 0 , \@config_taglist , \@{$dialog_config{list}} );
+add_items_from_config (0 , \@prog_taglist , \@{$dialog_config{list}} );
+add_items_from_config (0 , \@config_taglist , \@{$dialog_config{list}});
 foreach my $i (0 .. $#list_id) {
-	push @{$dialog_config{list}}, add_list_item ( 0 , $list_id[$i] , $list_item_line[$list_id[$i]][0] );
+    push @{$dialog_config{list}}, add_list_item (0 , $list_id[$i] , $list_item_line[$list_id[$i]][0] );
 }
 
 # Check for double entries
@@ -252,31 +257,31 @@ my @duplicates = find_array_duplicates (@{$dialog_config{list}});
 $error_message = "The configuration file \n'$script_metadata{configfile}'\n contains at least one wrong double identifier.";
 message_test_exit ( scalar (@duplicates) , $error_message ,  45);
 
-# Sort & define complet-list	
+# Sort & define complet-list
 @{$dialog_config{list}} = sort_pairwise ( @{$dialog_config{list}});;
-$dialog_config{complete_list} = join (' ',  grep { ref($_) ne 'ARRAY' } @{$dialog_config{list}} ); 
+$dialog_config{complete_list} = join (' ',  grep { ref($_) ne 'ARRAY' } @{$dialog_config{list}} );
 # Checking items from command-line are given & defined
 foreach my $cmd_item ( @{$shell_commands{commandline}} ) {
-	if ( $dialog_config{complete_list} !~ $cmd_item ) {
-		$error_message = "Error with commandline: Case '$cmd_item' not defined.";
-		message_exit ($error_message , 66) 
-	}
+    if ( $dialog_config{complete_list} !~ $cmd_item ) {
+        $error_message = "Error with commandline: Case '$cmd_item' not defined.";
+        message_exit ($error_message , 66)
+    }
 }
 
 #::: Main-case: extract OR exec cmd-lines OR ask with checklist
 if ($shell_commands{extract_all}) { 
-	show_all_items ();
-	$error_message = "Extraction done, program will finish.";
-	message_exit ($error_message , 0)
+    show_all_items ();
+    $error_message = "Extraction done, program will finish.";
+    message_exit ($error_message , 0)
 } elsif (scalar @{$shell_commands{commandline}} == 0 ) { # ask-for-selection
-	#$dialog_text="";
-    eval { @{$shell_commands{selection}} = ask_to_choose ($dialog_text) };
+    #$dialog_text="";
+    eval { @{$shell_commands{selection}}=ask_to_choose ($dialog_text) };
     if ($@) {
-		$error_message = "Error occurred: $@";
+        $error_message = "Error occurred: $@";
         message_exit ($error_message , 0)
 
     } elsif ($shell_commands{selection}[0] eq $cancel_option) {
-		$error_message = "Dialog canceled by user.";
+        $error_message = "Dialog canceled by user.";
         message_exit ($error_message , 0)
     }
 } else  { # take from comd-line
@@ -339,58 +344,54 @@ if ( $is_test_mode > 10 ) {
 # Replace in string substr using global hash string_map
 # working-strg is the string to be changed
 # key-tag is for (string_map{key-tag} = > replacer ) entries in string_map
-sub substitute_with_map { 
-	my ($working_strg , $key_tag, %strg_map ) = @_;
-	
-	if ($working_strg) {
-		foreach my $keyword (keys %strg_map ) {	
-			my $value = $strg_map{$keyword};
-			if ( $is_test_mode > 10 && $working_strg =~ /\$$keyword/ ) { # testmode
-				say "Repl '$value' for '\$$keyword' in ->".$working_strg;
-			};
-			$working_strg =~ s/\$$keyword/$value/g ;
-		
-			if ( $keyword eq $key_tag ) {
-				if ( $value =~ /^\$ALL/ ) { # $ALL at the beginning replaces complete string 
-				$working_strg = substr ($value, 4) ;
-				}
-			}
-		
-		}
-		if ($working_strg =~ /^\s*~/) { # starts with ~
-			if ($ENV{HOME}) {
-				$working_strg =~ s/~/$ENV{HOME}/g;
-			} else {
-				warn "'Error:ENV(HOME} not found.'";
-			}
-		}
+sub substitute_with_map {
+    my ($working_strg , $key_tag, %strg_map ) = @_;
 
-	}
-				
-	return $working_strg;
-};
+    if ($working_strg) {
+        foreach my $keyword (keys %strg_map ) {
+            my $value = $strg_map{$keyword};
+            if ( $is_test_mode > 10 && $working_strg =~ /\$$keyword/ ) { 
+                say "Repl '$value' for '\$$keyword' in ->".$working_strg
+            };
+            $working_strg =~ s/\$$keyword/$value/g ;
+
+            if ( $keyword eq $key_tag ) {
+                if ( $value =~ /^\$ALL/ ) { 
+                $working_strg = substr ($value, 4) 
+                }
+            }
+        }
+        if ($working_strg =~ /^\s*~/) { 
+            if ($ENV{HOME}) {
+                $working_strg =~ s/~/$ENV{HOME}/g
+            } else {
+                warn "'Error:ENV(HOME} not found.'"
+            }
+        }
+    }
+    return $working_strg;
+}
 
 # Getting the array with xpath
 # with error handling
 #
 sub get_array_with_xpath {
-	my ($xml_document, $xpath_expression) = @_;
-	my @nodes;
+    my ($xml_document, $xpath_expression) = @_;
+    my @nodes;
     my @text_values;
-	
-	# Find nodes with attributes from $xdoc
-	eval { @nodes = $xml_document->findnodes($xpath_expression) };
+
+    eval { @nodes = $xml_document->findnodes($xpath_expression) };
     if ($@) {
-		message_exit ("Error while searching element in xml-file\n$@" , 255)
+        $error_message ="Error while searching element in xml-file\n$@";
+        message_exit ($error_message , 254)
     }
-	if (@nodes) {	
-	# Extract literal values from @nodes
-		@text_values = map { $_->to_literal } @nodes;
-	} else {
-        message_exit ("Error: No nodes found for tag '$xpath_expression'" , 255 )
+    if (@nodes) {
+        @text_values = map { $_->to_literal } @nodes
+    } else {
+        $error_message = "Error: No nodes found for tag '$xpath_expression'";
+        message_exit ($error_message , 255 )
     }
-	
-	return @text_values;
+    return @text_values;
 }
 
 # Getting the string @tag
@@ -399,8 +400,10 @@ sub get_array_with_xpath {
 sub get_xml_text_by_tag {
     my ($doc, $tag , $attr_tag, $attr ) = @_;
     
-    warn "Error: Invalid XML document object" unless ref($doc) eq 'XML::LibXML::Document';
-    warn "Error: Tag name cannot be empty" unless defined($tag) && length($tag) > 0;
+    warn "Error: Invalid XML document object" 
+		unless ref($doc) eq 'XML::LibXML::Document';
+    warn "Error: Tag name cannot be empty" 
+		unless defined($tag) && length($tag) > 0;
 
     $tag = "/$tag"; $tag =~ s{^/+}{//};
 
@@ -421,31 +424,34 @@ sub get_xml_text_by_tag {
 sub get_xml_array_by_attribute {
     my ($doc, $tag, $attr) = @_;
 
-    warn "Error: Invalid XML document object" unless ref($doc) eq 'XML::LibXML::Document';
-    warn "Error: Tag name cannot be empty ($tag)" unless defined($tag) && length($tag) > 0;
-    warn "Error: Attribute name cannot be empty" unless defined($attr) && length($attr) > 0;
+    warn "Error: Invalid XML document object"
+        unless ref($doc) eq 'XML::LibXML::Document';
+    warn "Error: Tag name cannot be empty ($tag)"
+        unless defined($tag) && length($tag) > 0;
+    warn "Error: Attribute name cannot be empty"
+        unless defined($attr) && length($attr) > 0;
 
     my $xpath = "*/$tag"."/\@$attr"; # @nnn for attribute
-	my @integers = get_array_with_xpath ($doc, $xpath );
-	
+    my @integers = get_array_with_xpath ($doc, $xpath );
+
     # Filter @literals to only include integer values
     @integers = grep { $_ =~ /^[+-]?\d+$/ } @integers;
 
     return @integers;
 }
 
-# Push check & the item 1,2 into dialog-list 
+# Push check & the item 1,2 into dialog-list
 sub add_items_from_config {
     my ($checker, $items, $list_ref ) = @_;
-    if (scalar @$items < 2) { 
-		die "Not enough items to add from config";
+    if (scalar @$items < 2) {
+        die "Not enough items to add from config";
     }
     #
-    my @result = add_list_item( 
-					$checker , # 0 for off. >=1 for on
-					$config_elements{@$items[1]} , # id (integer)
-					$config_elements{@$items[2]}   # that's an array !
-				 );
+    my @result = add_list_item(
+                    $checker , # 0 for off. >=1 for on
+                    $config_elements{@$items[1]} , # id (integer)
+                    $config_elements{@$items[2]}   # that's an array !
+                 );
     if (@result) {
         push @$list_ref, @result;
     }
@@ -456,16 +462,14 @@ sub add_items_from_config {
 sub sort_pairwise {
     my @array = @_;
 
-    # Extract odd-indexed elements (1st, 3rd, 5th, etc.)
-    my @odd_elements = @array[0..$#array/2*2];  # Get elements at indices 0, 2, 4, ...
-    
+    my @odd_elements = @array[0..$#array/2*2];
+
     # Create pairs from the odd-indexed elements
     my @pairs;
     for (my $i = 0; $i < @odd_elements; $i += 2) {
-        push @pairs, [$odd_elements[$i], $odd_elements[$i+1]] if defined $odd_elements[$i+1];
+        push @pairs, [$odd_elements[$i], $odd_elements[$i+1]]
+            if defined $odd_elements[$i+1];
     }
-    
-    # Sort pairs
     my @sorted_pairs = sort { $a->[0] <=> $b->[0] } @pairs;
 
     # Flatten the sorted pairs back into an array
@@ -473,29 +477,29 @@ sub sort_pairwise {
     foreach my $pair (@sorted_pairs) {
         push @sorted_array, @$pair;
     }
-
     return @sorted_array;
 }
 
 # Get the prog-name from item
 sub extract_progname { # mit Umstellung auf oo vielelicht weg
-	my ($selector , $substr_tag , $substr_attrib , @tag_list) = @_;
-#	my ($substr_tag1 , $substr_attrib1 ) = ('_program' , '_id' );
+    my ($selector , $substr_tag , $substr_attrib , @tag_list) = @_;
+#   my ($substr_tag1 , $substr_attrib1 ) = ('_program' , '_id' );
 #    my ( $selector, $tag_pattern, $attribute_pattern, @tag_list) = @_;
-	my @program_name;
+    my @program_name;
 
-	for my $j (@tag_list) {
-		if ($config_elements{$j} && $j =~ /$substr_attrib/ && $config_elements{$j} eq $selector ) {
-			for my $k (@tag_list) {
-				if  ( $k =~ /$substr_tag/) {
+    for my $j (@tag_list) {
+        if ($config_elements{$j}
+            && $j =~ /$substr_attrib/
+            && $config_elements{$j} eq $selector ) {
+            for my $k (@tag_list) {
+                if  ( $k =~ /$substr_tag/) {
 #say $j."::$k<===>$config_elements{$j}###".$config_elements{$k};
-					push @program_name , $config_elements{$k};
-				}
-			}
-		}
-	}
-
-	return @program_name;
+                    push @program_name , $config_elements{$k};
+                }
+            }
+        }
+    }
+    return @program_name;
 }
 
 # Function to ensure if a path is readable
@@ -512,12 +516,14 @@ sub ensure_path_readability {
             $short = substr($path, length($dir_usb), index($path, "/", length($dir_usb)) - length($dir_usb));
             ensure_path_mounted($dir_usb . $short);
         } elsif (! -r $path) {
-            message_exit("Config-Error: Path\n'$path'\nis missing or not readable.", 21);
+            $error_message = "Config-Error: Path\n'$path'\nis missing or not readable.";
+            message_exit($error_message , 21);
         }
     }
 }
 
-# Check if the required path (usb-stick; NAS; cloud) is mounted using sys-filesytem
+# Check if the required path (usb-stick; NAS; cloud)
+# is mounted using sys-filesytem
 sub ensure_path_mounted {
     my ($mounted_path, $max_attempts  ) = @_;
 
@@ -525,7 +531,8 @@ sub ensure_path_mounted {
         $max_attempts = 5
     }
     if (! defined($mounted_path) || $mounted_path eq '' ) {
-        message_exit ("Invalid mounted path", 221)
+        $error_message = "Invalid mounted path";
+        message_exit ($error_message , 221)
     }
 
     my $attempt = 1;
@@ -538,10 +545,11 @@ sub ensure_path_mounted {
         return 1
     } else {
         while ($attempt < $max_attempts) {
-			$dialog_text = "Path or Stick is missing (#$attempt/$max_attempts): ['$mounted_path' not found]\n\nDo you want to try again?";
+            $dialog_text = "Path or Stick is missing (#$attempt/$max_attempts): ['$mounted_path' not found]\n\nDo you want to try again?";
             $answer = ask_to_continue($dialog_text , 22);
             if ($answer eq $cancel_option) {
-                message_exit ("Failed to find mounted path '$mounted_path'.", 222);
+                $error_message ="Failed to find mounted path '$mounted_path'.";
+                message_exit ($error_message , 222);
             }
             $attempt++;
 
@@ -555,7 +563,8 @@ sub ensure_path_mounted {
             }
         }
     }
-    message_exit("Failed to find mounted path '$mounted_path' after $max_attempts attempts.", 223);
+    $error_message ="Failed to find mounted path '$mounted_path' after $max_attempts attempts.";
+    message_exit ($error_message , 223);
 }
 
 # Function to ensure availibility of a program
@@ -566,8 +575,9 @@ sub ensure_program_available {
     $splitter ||= 'Klsos'; # some ramdon word if undef
     my @program_parts = split($splitter, $prog_name);
 
-    if (system("command -v '$program_parts[0]' > /dev/null 2>&1") != 0) {
-        message_exit ("Config-Error: program '$program_parts[0]' not found.\n", 24);
+    if (system("command -v '$program_parts[0]' > /dev/null 2>&1") != 0){
+        $error_message = "Config-Error: program '$program_parts[0]' not found.\n";
+        message_exit ($error_message , 24);
     }
 }
 
