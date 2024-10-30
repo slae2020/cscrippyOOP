@@ -9,7 +9,7 @@ no warnings 'experimental::smartmatch';
 
 use File::Basename;
 use Cwd 'abs_path';
-use XML::LibXML;
+#use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
 use Data::Dumper; # nur für test ausgaben
@@ -136,19 +136,36 @@ if ($is_test_mode && ! $is_silent_mode ) {
 }
 
 #::: init doc for LibXML
-eval {
-    $dom = XML::LibXML->load_xml(
-                            location => $script_metadata{configfile},
-                            no_blanks => 0 # Remove blank nodes from the parsed XML
-                            );
-    $script_metadata{config_main_node} = $dom->documentElement->nodeName;
-};
-if ($@) {
-    $error_message = "Failed to parse XML file: $@";
-    message_exit ($error_message , 255);
-} else {
-    set_dialog_item ('titles' , uc($script_metadata{script_name})." V".$VERSION , '' , '' );
-}
+#eval {
+    #$dom = XML::LibXML->load_xml(
+                            #location => $script_metadata{configfile},
+                            #no_blanks => 0 # Remove blank nodes from the parsed XML
+                            #);
+    #$script_metadata{config_main_node} = $dom->documentElement->nodeName;
+#};
+#if ($@) {
+    #$error_message = "Failed to parse XML file: $@";
+    #message_exit ($error_message , 255);
+#} else {
+    #set_dialog_item ('titles' , uc($script_metadata{script_name})." V".$VERSION , '' , '' );
+#}
+
+###
+#$dom = XML::LibXML::Reader::CfgAnalyser->load_xml(
+                            #location => $script_metadata{configfile},
+                            #no_blanks => 0 # Remove blank nodes from the parsed XML
+                            #);
+my $reader2 = XML::LibXML::Reader::CfgAnalyser->load_xml(location => "/home/stefan/prog/bakki/cscrippy/cscrippy/config_offN1006.xml")
+       or die "cannot read configfile\n";
+
+ my @taglist;
+ 
+@taglist = $reader2->get_unique_node_names_at_depth (3);
+
+print Dumper @taglist;
+
+die 99;
+###
 
 ###
  my @taglist;

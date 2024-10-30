@@ -1,12 +1,12 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <bk-script_options
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xsd">
 
 	<general>
 		<cscrippy_name>Starter BK</cscrippy_name>
-		<versionNr date="2024-10-05">1.7</versionNr>
-		<versionTxt> Now in perl-mode</versionTxt>
+		<versionNr date="2024-11-03">0.501T</versionNr>
+		<versionTxt> mit Testpaare</versionTxt>
 		<lang>de-DE</lang>
 	</general>
 
@@ -64,7 +64,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 			<dir2> $remote_dir/ausdruck</dir2>
 		</ordpaar>
 		<ordpaar  id="04">
-			<_name>Shuffle nach unten</_name>
+			<_name>Shuffle nach Unterricht(unt)</_name>
 			<prog>$std_program</prog>
 			<dir1> ~/slae_kim/abf</dir1>
 			<dir2> $home_dir/slae_unt</dir2>
@@ -87,6 +87,28 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 			<dir1> $empty</dir1>
 			<dir2> $empty</dir2>
 		</ordpaar>
+		<ordpaar id="14">
+			<_name>Medien/AV</_name>
+			<prog>$std_program</prog>
+			<dir1> ~$standard_dir/.media</dir1>
+			<dir2> $storage_dir/SLAE01/slae_media</dir2>
+		</ordpaar>
+		
+		<ordpaar id="66">
+			<_name>Test falscher Pfad</_name>
+			<prog>$std_program</prog>
+			<dir1> $standard_dir/media</dir1>
+			<dir2> $storage_dir/SLAE01/slae_media</dir2>
+		</ordpaar>
+		
+		<ordpaar id="67">
+			<_name> Test ohne Lücke </_name>
+			<prog>$std_program</prog>
+			<dir1>~$standard_dir/abl</dir1>
+			<dir2>$storage_dir/SLAE01/slae_media</dir2>
+		</ordpaar>
+
+
 <!--
 <ordpaar>
 		<id>08</id>

@@ -1,8 +1,9 @@
 package XML::LibXML::Reader::CfgAnalyser;
 
 use 5.010;
-use parent XML::LibXML::Reader;
-
+#use parent XML::LibXML;
+use parent 'XML::LibXML::Reader';
+use Try::Tiny;
 
 	use strict;
     use warnings;
@@ -21,25 +22,43 @@ use parent XML::LibXML::Reader;
     
     #}
 
-sub get_node_elements { # get_nodeNamesByDepth
-	my $reader = shift;
-	my $act_depth = shift;
-	my @new_list;
-	
+sub get_unique_node_names_at_depth {
+    my ($reader, $act_depth) = @_; # reader --self???
+    my @unique_node_names;
+say $reader;
 
-	while ($reader->read) {
-	  if ($reader->nodeType < 8  ) {
-		if ($reader->depth == $act_depth) {
-			say $reader->name."---".$reader->nodeType;
-if (	 join ('',@new_list) !~	$reader->name) {
-	say "nu";
-			push @new_list , $reader->name;
-	}
-		}
-	  }
-	}
-	return @new_list;
+    while ($reader->read) {
+        if ($reader->nodeType < 8) {
+            if ($reader->depth == $act_depth) {
+                if (!grep { $_ eq $reader->name } @unique_node_names) {
+                    push @unique_node_names, $reader->name;
+                }
+            }
+        }
+    }
+
+    return @unique_node_names;
 }
+
+####
+
+sub load_xml {
+
+    my $self = shift;
+    
+say @_;
+    try {
+    $self->load_xml(@_);
+	}
+	catch {
+        # Handle errors here
+        warn "Error loading XML: $_";
+        return;
+    }
+	return $self;
+}
+
+####
 
 my $reader = XML::LibXML::Reader::CfgAnalyser->new(location => "/home/stefan/prog/bakki/cscrippy/cscrippy/config_offN1006.xml")
        or die "cannot read configfile\n";
@@ -47,7 +66,7 @@ my $reader = XML::LibXML::Reader::CfgAnalyser->new(location => "/home/stefan/pro
 say "###::#\n"; 
  my @taglist;
  
-@taglist = get_node_elements ($reader, 2);
+#@taglist = get_node_elements ($reader, 2);
 
 1;
 
