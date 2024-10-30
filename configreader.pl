@@ -12,7 +12,7 @@ use Cwd 'abs_path';
 use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
-#use Data::Dumper; # nur für test ausgaben
+use Data::Dumper; # nur für test ausgaben
 
 use lib "/home/stefan/prog/bakki/cscrippy/";
 use Uupm::Dialog;
