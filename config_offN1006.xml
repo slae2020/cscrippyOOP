@@ -5,7 +5,7 @@ xsi:noNamespaceSchemaLocation="/home/stefan/prog/bakki/Bakki-the-stick/config.xs
 
 	<general>
 		<cscrippy_name date="2024-10-06">Office Vorlagen Starter</cscrippy_name>
-		<versionNr>0.5</versionNr>
+		<versionNr>0.5b</versionNr>
 		<versionTxt> noch alte Vorlagen.</versionTxt>
 		<lang>de-DE</lang>
 	</general>

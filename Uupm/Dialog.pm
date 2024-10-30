@@ -89,6 +89,7 @@ our $dialog = UI::Dialog::Backend::Zenity->new(
 
 printf "------------ %s ('%s')------------\n",$0,$VERSION if $is_test_mode;
 
+
 #message_notification ("Reading list!",1);
 
 #push @{$dialog_config{list}}, add_list_item (1,'01','first choice');

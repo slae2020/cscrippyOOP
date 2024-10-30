@@ -12,13 +12,13 @@ use Cwd 'abs_path';
 use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
-
-
 use Data::Dumper; # nur für test ausgaben
 
-use lib "/home/stefan/prog/bakki/cscrippy/";
+use lib "/home/stefan/prog/bakki/cscrippy/cscrippy";
 use Uupm::Dialog;
 #use Uupm::Checker;
+use Uupm::CfgAnalyser;
+
 use Sys::Filesystem ();
 
 $VERSION = "1.8"; # 2024-10-30
@@ -149,6 +149,13 @@ if ($@) {
 } else {
     set_dialog_item ('titles' , uc($script_metadata{script_name})." V".$VERSION , '' , '' );
 }
+
+###
+ my @taglist;
+ 
+@taglist = get_node_elements ($reader, 2);
+
+###
 
 #::: Start
 $dialog_text =  "Parsing '$script_metadata{config_main_node}' from\n'$script_metadata{configfile}'.";
