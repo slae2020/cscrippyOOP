@@ -12,9 +12,7 @@ use Cwd 'abs_path';
 use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
-
-
-
+ppp
 
 use Data::Dumper; # nur für test ausgaben
 
