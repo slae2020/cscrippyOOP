@@ -12,7 +12,13 @@ use Cwd 'abs_path';
 use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
+<<<<<<< HEAD
 ppp
+=======
+
+ladsldöl
+
+>>>>>>> 16b01f4 (test egal)
 
 use Data::Dumper; # nur für test ausgaben
 
