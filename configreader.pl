@@ -12,12 +12,7 @@ use Cwd 'abs_path';
 use XML::LibXML;
 use Getopt::Long qw(GetOptions :config no_ignore_case );
 
-<<<<<<< HEAD
-ppp
-=======
-ladsldöl
 
->>>>>>> 16b01f4 (test egal)
 
 use Data::Dumper; # nur für test ausgaben
 
@@ -26,7 +21,7 @@ use Uupm::Dialog;
 #use Uupm::Checker;
 use Sys::Filesystem ();
 
-$VERSION = "1.7001beta"; # 2024-10-28
+$VERSION = "1.8"; # 2024-10-30
 
 my $dir_usb = "/media/stefan/"; #??? -> xml
 my $dir_mnt = "/mnt/";
