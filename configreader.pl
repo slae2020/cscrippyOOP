@@ -15,7 +15,6 @@ use Getopt::Long qw(GetOptions :config no_ignore_case );
 <<<<<<< HEAD
 ppp
 =======
-
 ladsldöl
 
 >>>>>>> 16b01f4 (test egal)
