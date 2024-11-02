@@ -243,7 +243,7 @@ set_dialog_item ('titles' , $config_elements{dialog_title}, $config_elements{dia
 	@list_column_name = split(/\s+/, $config_elements{$dialog_taglist[3]}) if $dialog_taglist[3];
 	@list_column_name = map { s/$nb_space/ /g; $_ } @list_column_name; 
 set_dialog_item ('columns' , @list_column_name);
-set_dialog_item ('window_size' , 550 , 500 , '');
+#set_dialog_item ('window_size' , 550 , 500 , '');
 
 # Set elements for the listed items (for checklist)
 add_items_from_config (0 , \@prog_taglist , \@{$dialog_config{list}} );
@@ -275,6 +275,7 @@ if ($shell_commands{extract_all}) {
     message_exit ($error_message , 0)
 } elsif (scalar @{$shell_commands{commandline}} == 0 ) { # ask-for-selection
     #$dialog_text="";
+    set_dialog_item ('window_size' , 550 , 500 , '');
     eval { @{$shell_commands{selection}}=ask_to_choose ($dialog_text) };
     if ($@) {
         $error_message = "Error occurred: $@";
